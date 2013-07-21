@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="css/video-js.min.css" rel="stylesheet" />
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="../assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->    
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">Project name</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="#">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <div class="row">
+        <div class="span8">
+          <div width="100%" id="videoPlayerHolder">            
+            <iframe id="videoPlayer" src="http://www.youtube.com/embed/s_n1aZy1NV8?modestbranding=1&rel=0&autoplay=0&loop=0&showinfo=0"
+            frameborder="0" allowfullscreen></iframe>
+          </div>        
+        </div>
+        <div class="span4">
+          
+          <div class="accordion" id="playlists">
+                       
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- /container -->
+
+  <script src="http://code.jquery.com/jquery.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/video.js"></script>
+  <script src="js/vjs.youtube.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.string/2.3.1/underscore.string.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/fitvids/1.0.1/jquery.fitvids.min.js"></script>
+
+  <script id="playlist-template" type="text/x-handlebars-template">
+    {{#each items}}
+      <div class="accordion-group">
+        <div class="accordion-heading">
+          <a class="accordion-toggle" data-toggle="collapse" data-parent="#playlists" data-id="{{id}}" href="#playlist-{{id}}">
+            {{snippet.title}}
+          </a>
+        </div>
+        <div id="playlist-{{id}}" data-id="{{id}}" class="accordion-body collapse playlist">
+          <div class="accordion-inner">
+          </div>
+        </div>
+      </div>
+    {{/each}}
+  </script>
+
+  <script id="playlist-item-template" type="text/x-handlebars-template">
+    <div>
+      {{#each items}} 
+        <div class="media" style="padding: 5px">
+          <a data-id="{{snippet.resourceId.videoId}}" class="video-link" href="#">
+            <image class="media-object pull-left" src='{{snippet.thumbnails.default.url}}' />
+            <div class="media-body", style="padding: 5px">
+              <p>{{snippet.title}}</p>
+            </div>
+          </a>          
+        </div>
+      {{/each}}      
+    </div>
+  </script>
+
+  <script>
+  $(function(){
+      // load underscore.string
+      _.mixin(_.str.exports());
+      $("#videoPlayerHolder").fitVids();
+      
+      $('div.fluid-width-video-wrapper').append($('<div id="clickJacker" style="position: absolute; z-index: 999;height: 40px;width: 100px; cursor: pointer; bottom: 35px; right: 0px;"></div>'));
+
+      var key = "AIzaSyDkzz9NxYT0beSLWdd9m8a5-lEOhBZj71M";
+      var playlists = [
+        "PLufQu_4ePaEpPsfF2WPDi4fvMTJ5z_z0b",
+        "PLufQu_4ePaEo45WdzqBcj8FIq6TCktyuI"
+      ];
+
+      var playlistsDiv = $('#playlists');    
+      var playlistTemplate = Handlebars.compile($("#playlist-template").html());
+      var playlistItemTemplate = Handlebars.compile($("#playlist-item-template").html());
+
+      var youtubeLinkTemplate = function(id){
+        return "http://www.youtube.com/embed/"+id+"?modestbranding=1&rel=0&autoplay=0&loop=0&showinfo=0";
+      }
+
+      var playVideo = function(youtubeId){
+        var youtube = youtubeLinkTemplate(youtubeId);
+        console.log(youtube);
+        console.log($("#videoPlayer"));
+        $("#videoPlayer").attr("src", youtube);
+      }
+
+      $.get(
+        "https://www.googleapis.com/youtube/v3/playlists", 
+        data={'key': key, 'id': _.join(",", playlists) , 'part': 'snippet,id'}
+      ).success(function(items){        
+        playlistsDiv.html(playlistTemplate(items));
+      });
+
+      playlistsDiv.on("show", ".playlist", function(e){        
+        var playlistGroup = $(e.target);
+        var playlistId = playlistGroup.data('id');
+        $.get(
+            "https://www.googleapis.com/youtube/v3/playlistItems",
+            data={'key': key, 'playlistId': playlistId, 'part': 'snippet,id'}
+          ).success(function(items){
+            playlistGroup.html(playlistItemTemplate(items));
+          });
+      });
+
+      playlistsDiv.on("click", ".video-link", function(e){
+
+        var videoId = $(e.currentTarget).data('id');
+        playVideo(videoId);
+
+      });
+
+  });
+  </script>
+  </body>
+</html>
